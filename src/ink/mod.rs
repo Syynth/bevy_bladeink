@@ -8,8 +8,7 @@
 //! ```rust
 //! use bevy::prelude::*;
 //! use bladeink::value_type::ValueType;
-//! use bevy_bladeink::*;
-//! use bevy_bladeink::AddInkBindingApp;
+//! use bevy_bladeink::prelude::*;
 //!
 //! #[derive(Event, Clone)]
 //! struct DespawnEntity(pub String);

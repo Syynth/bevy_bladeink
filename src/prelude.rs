@@ -1,7 +1,7 @@
 pub use crate::{
     commands::{BeginSequenceCommandsExt, ContinueSequenceCommandsExt},
     components::InkPath,
-    ink::AddInkBindingApp,
+    ink::{AddInkBindingApp, InkBindingDefinition, InkBindingError},
     plugin::InkPlugin,
     resources::InkStory,
 };
