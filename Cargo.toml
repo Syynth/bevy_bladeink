@@ -14,7 +14,7 @@ thiserror = "2"
 bladeink = "1"
 
 [features]
-default = ["bevy/bevy_log", "bevy/bevy_asset"]
+default = ["bevy/bevy_log", "bevy/bevy_asset", "ui"]
 ui = ["bevy/bevy_ui"]
 dev = ["bevy/file_watcher"]
 

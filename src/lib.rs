@@ -45,6 +45,10 @@ pub mod prelude;
 /// Bevy resources for managing Ink stories and their associated data.
 pub mod resources;
 
+#[cfg(feature = "ui")]
+/// A collection of UI components and systems for managing Ink dialogue, intended to be styled by the consumer.
+pub mod ui;
+
 /// System sets for `bevy_bladeink`
 #[derive(SystemSet, Clone, Copy, Eq, PartialEq, Hash, Debug)]
 pub enum InkSystems {

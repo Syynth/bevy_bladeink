@@ -6,3 +6,6 @@ pub use crate::{
     plugin::InkPlugin,
     resources::InkStory,
 };
+
+#[cfg(feature = "ui")]
+pub use crate::ui::prelude::*;
