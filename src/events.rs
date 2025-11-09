@@ -2,6 +2,9 @@ use bevy::prelude::*;
 
 use crate::ink::ChoiceItem;
 
+#[derive(Event, Clone, Debug)]
+pub struct StoryReady;
+
 /// After a successful `BeginSequence` command is sent, this event is emitted.
 #[derive(Event, Clone, Debug)]
 pub struct SequenceBegin(pub String);

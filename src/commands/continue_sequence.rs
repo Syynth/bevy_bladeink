@@ -1,4 +1,4 @@
-use bevy::{ecs::system::RunSystemOnce, prelude::*};
+use bevy::prelude::*;
 use bladeink::story::Story;
 
 use crate::{
@@ -19,35 +19,47 @@ impl ContinueSequenceCommand {
 
 impl Command for ContinueSequenceCommand {
     fn apply(self, world: &mut World) {
-        let _ = world.run_system_once(continue_sequence);
-    }
-}
+        #[cfg(feature = "debug_log")]
+        trace!("Continuing ink sequence");
+        let Some(mut story) = world.get_non_send_resource_mut::<Story>() else {
+            error!(
+                "Failed to load state: Story resource not found. Did you forget to insert the InkProject resource?",
+            );
+            return;
+        };
 
-fn continue_sequence(mut commands: Commands, mut story: If<NonSendMut<Story>>) {
-    if !story.can_continue() {
-        let choices = story.get_current_choices();
+        if !story.can_continue() {
+            trace!("Continuing: No more content available");
+            let choices = story.get_current_choices();
 
-        let choices: Vec<ChoiceItem> = choices.iter().map(|c| c.as_ref().into()).collect();
+            let choices: Vec<ChoiceItem> = choices.iter().map(|c| c.as_ref().into()).collect();
 
-        if choices.is_empty() {
-            commands.trigger(SequenceEnd);
+            if choices.is_empty() {
+                trace!("Continuing: No choices available");
+                world.trigger(SequenceEnd);
+                return;
+            }
+
+            trace!("Continuing: Delivering {} choices", choices.len());
+
+            world.trigger(DeliverChoices::new(choices));
             return;
         }
 
-        commands.trigger(DeliverChoices::new(choices));
-        return;
-    }
-    match story.cont() {
-        Ok(text) => {
-            let tags = story.get_current_tags().unwrap_or_default();
-            commands.trigger(DeliverLine::new(text, tags));
-        }
-        Err(err) => {
-            error!("Error continuing story: {}", err);
-        }
-    };
-    if let Ok(_story_state) = story.save_state() {
-        // commands.trigger(Save(story_state));
+        match story.cont() {
+            Ok(text) => {
+                let tags = story.get_current_tags().unwrap_or_default();
+                trace!("Continuing: Delivering line - {}", text);
+                trace!("Continuing: Tags - {:?}", tags);
+                world.trigger(DeliverLine::new(text, tags));
+            }
+            Err(err) => {
+                error!("Error continuing story: {}", err);
+            }
+        };
+        // if let Ok(_story_state) = story.save_state() {
+        //     commands.trigger(Save(story_state));
+        // }
     }
 }
 

@@ -1,5 +1,8 @@
 pub use crate::{
-    commands::{BeginSequenceCommandsExt, ContinueSequenceCommandsExt},
+    commands::{
+        BeginSequenceCommandsExt, ContinueSequenceCommandsExt, LoadStateCommandsExt,
+        ResetStateCommandsExt, SelectChoiceCommandsExt,
+    },
     components::InkPath,
     events::*,
     ink::{AddInkBindingApp, InkBindingDefinition, InkBindingError},

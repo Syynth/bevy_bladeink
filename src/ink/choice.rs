@@ -8,6 +8,20 @@ pub struct ChoiceItem {
     pub(crate) tags: Vec<String>,
 }
 
+impl ChoiceItem {
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn index(&self) -> usize {
+        self.index
+    }
+
+    pub fn tags(&self) -> &[String] {
+        &self.tags
+    }
+}
+
 impl From<Choice> for ChoiceItem {
     fn from(choice: Choice) -> Self {
         Self {

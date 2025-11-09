@@ -17,6 +17,8 @@ impl BeginSequenceCommand {
 
 impl Command for BeginSequenceCommand {
     fn apply(self, world: &mut World) {
+        #[cfg(feature = "debug_log")]
+        trace!("Starting ink sequence '{}'", self.sequence);
         let Some(mut story) = world.get_non_send_resource_mut::<Story>() else {
             error!(
                 "Failed to start ink sequence '{}': Story resource not found. Did you forget to insert the InkProject resource?",

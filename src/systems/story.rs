@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     assets::StoryJson,
+    events::StoryReady,
     ink::{InkBindingMap, create_story},
     resources::{InkAssetReady, InkStory},
 };
@@ -28,4 +29,6 @@ pub(crate) fn parse_story_asset(world: &mut World) {
     };
 
     world.insert_non_send_resource(story);
+    world.remove_resource::<InkAssetReady>();
+    world.trigger(StoryReady);
 }

@@ -13,10 +13,17 @@ bevy_crossbeam_event = "0.9"
 thiserror = "2"
 bladeink = "1"
 
+[dev-dependencies]
+bevy = { version = "0.17", default-features = true }
+
 [features]
 default = ["bevy/bevy_log", "bevy/bevy_asset", "ui"]
 ui = ["bevy/bevy_ui"]
-dev = ["bevy/file_watcher"]
+dev = ["bevy/file_watcher", "debug_log"]
+debug_log = []
+
+[[example]]
+name = "basic"
 
 [package.metadata.docs.rs]
 all-features = true
