@@ -35,11 +35,11 @@ impl Command for LoadStateCommand {
 
 /// Helper trait for adding `LoadStateCommand` to `Commands`.
 pub trait LoadStateCommandsExt {
-    fn load_ink_state(&mut self, state: InkState) -> &mut Self;
+    fn ink_load_state(&mut self, state: InkState) -> &mut Self;
 }
 
 impl LoadStateCommandsExt for Commands<'_, '_> {
-    fn load_ink_state(&mut self, state: InkState) -> &mut Self {
+    fn ink_load_state(&mut self, state: InkState) -> &mut Self {
         self.queue(LoadStateCommand::new(state));
         self
     }

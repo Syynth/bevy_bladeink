@@ -40,12 +40,14 @@
 //! }
 
 mod bindings;
+mod choice;
 mod error;
 mod ink_value;
 mod state;
 mod story;
 
 pub use bindings::*;
+pub use choice::*;
 pub use error::*;
 pub use ink_value::*;
 pub use state::*;

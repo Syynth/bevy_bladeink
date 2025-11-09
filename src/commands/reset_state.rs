@@ -31,11 +31,11 @@ impl Command for ResetStateCommand {
 
 /// Helper trait for adding `LoadStateCommand` to `Commands`.
 pub trait ResetStateCommandsExt {
-    fn reset_ink_state(&mut self) -> &mut Self;
+    fn ink_reset_state(&mut self) -> &mut Self;
 }
 
 impl ResetStateCommandsExt for Commands<'_, '_> {
-    fn reset_ink_state(&mut self) -> &mut Self {
+    fn ink_reset_state(&mut self) -> &mut Self {
         self.queue(ResetStateCommand::new());
         self
     }

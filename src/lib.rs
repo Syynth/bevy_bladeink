@@ -31,12 +31,13 @@ use bevy::prelude::*;
 
 mod assets;
 mod components;
-mod events;
 mod plugin;
 mod systems;
 
 /// Commands for instructing the Ink story to change state.
 pub mod commands;
+/// Events that can be emitted by the Ink story.
+pub mod events;
 /// Core ink stuff
 pub mod ink;
 /// Pre-defined modules and types for easy import.

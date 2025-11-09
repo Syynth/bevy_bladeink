@@ -52,11 +52,11 @@ pub trait BeginSequenceCommandsExt {
     ///
     /// ...because of the way that content is nested within a weave
     /// structure.
-    fn begin_sequence(&mut self, sequence: impl Into<String>) -> &mut Self;
+    fn ink_begin_sequence(&mut self, sequence: impl Into<String>) -> &mut Self;
 }
 
 impl<'w, 's> BeginSequenceCommandsExt for Commands<'w, 's> {
-    fn begin_sequence(&mut self, sequence: impl Into<String>) -> &mut Self {
+    fn ink_begin_sequence(&mut self, sequence: impl Into<String>) -> &mut Self {
         self.queue(BeginSequenceCommand::path(sequence));
         self
     }
