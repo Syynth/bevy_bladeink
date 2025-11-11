@@ -9,7 +9,7 @@ fn main() {
         .insert_resource(InkStory::new("ink/bindings.ink.json"))
         .bind_ink_function::<SetTextColor>("set_text_color")
         .add_systems(Startup, setup)
-        .add_systems(Update, check_input)
+        .add_systems(Update, update)
         .add_observer(on_set_text_color)
         .add_observer(on_story_ready)
         .add_observer(on_deliver_line)
@@ -21,6 +21,9 @@ const FULL: Val = Val::Percent(100.);
 
 #[derive(Component)]
 struct TextDisplay;
+
+#[derive(Component)]
+struct CounterDisplay;
 
 #[derive(Component)]
 struct InstructionsDisplay;
@@ -87,6 +90,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 )]
             ),
             (
+                CounterDisplay,
+                TextColor(GRAY_400.into()),
+                TextFont {
+                    font_size: 16.0,
+                    ..default()
+                },
+                Text::new("Color changed 0 times.")
+            ),
+            (
                 InstructionsDisplay,
                 TextColor(GRAY_400.into()),
                 TextFont {
@@ -99,10 +111,18 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 }
 
-fn check_input(mut commands: Commands, key: Res<ButtonInput<KeyCode>>) {
+fn update(
+    mut commands: Commands,
+    key: Res<ButtonInput<KeyCode>>,
+    mut q_text: Single<&mut Text, With<CounterDisplay>>,
+    ink_vars: If<Res<InkVariables>>,
+) {
     if key.just_pressed(KeyCode::Space) {
         commands.ink_continue_sequence();
     }
+
+    let count = ink_vars.get_int("color_change_count").unwrap_or(0);
+    q_text.0 = format!("Color changed {} times.", count);
 }
 
 fn on_story_ready(
@@ -115,16 +135,6 @@ fn on_story_ready(
     q_text.0 = "Binding demo.\n".to_string();
 }
 
-fn on_deliver_line(
-    line: On<DeliverLine>,
-    mut q_text: Single<&mut Text, With<TextDisplay>>,
-    ink_vars: Res<InkVariables>,
-) {
-    let mut next_line = line.text.clone();
-
-    if let Some(count) = ink_vars.get_int("color_change_count") {
-        next_line.push_str(&format!("\nColor changed {} times.", count));
-    }
-
-    q_text.0 = next_line;
+fn on_deliver_line(line: On<DeliverLine>, mut q_text: Single<&mut Text, With<TextDisplay>>) {
+    q_text.0 = line.text.clone();
 }
