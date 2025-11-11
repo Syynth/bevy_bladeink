@@ -98,7 +98,6 @@ This crate is still a work in progress. I'm focused on the use-cases that are bl
 - [ ] Support for threading
 - [ ] Support for working with `LIST` types on the Bevy side.
 
-
-### Asset Credits
+## Asset Credits
 - [The Intercept](https://github.com/inkle/the-intercept) - Available under the MIT License.
 - [Fira Sans](https://fonts.google.com/specimen/Fira+Sans) - Available under the SIL Open Font License.

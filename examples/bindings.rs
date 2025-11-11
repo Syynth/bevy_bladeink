@@ -1,16 +1,18 @@
 use bevy::{color::palettes::tailwind::GRAY_400, prelude::*};
 use bevy_bladeink::prelude::*;
+use bladeink::value_type::ValueType;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(InkPlugin)
-        .insert_resource(InkStory::new("ink/TheIntercept.ink.json"))
+        .insert_resource(InkStory::new("ink/bindings.ink.json"))
+        .bind_ink_function::<SetTextColor>("set_text_color")
         .add_systems(Startup, setup)
         .add_systems(Update, check_input)
+        .add_observer(on_set_text_color)
         .add_observer(on_story_ready)
         .add_observer(on_deliver_line)
-        .add_observer(on_deliver_choices)
         .run();
 }
 
@@ -22,6 +24,32 @@ struct TextDisplay;
 
 #[derive(Component)]
 struct InstructionsDisplay;
+
+#[derive(Event, Clone)]
+struct SetTextColor(Color);
+
+impl InkBindingDefinition for SetTextColor {
+    type Event = SetTextColor;
+
+    fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
+        match &args[..] {
+            [] => Err(InkBindingError::ArgumentsRequired),
+            [ValueType::String(color)] => Srgba::hex(&color.string)
+                .map(|c| SetTextColor(c.into()))
+                .map_err(|_| InkBindingError::InvalidArguments),
+            [_] => Err(InkBindingError::InvalidArguments),
+            _ => Err(InkBindingError::TooManyArguments),
+        }
+    }
+}
+
+fn on_set_text_color(
+    text_color: On<SetTextColor>,
+    mut commands: Commands,
+    q_text: Single<Entity, With<TextDisplay>>,
+) {
+    commands.entity(*q_text).insert(TextColor(text_color.0));
+}
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
@@ -75,67 +103,17 @@ fn check_input(mut commands: Commands, key: Res<ButtonInput<KeyCode>>) {
     if key.just_pressed(KeyCode::Space) {
         commands.ink_continue_sequence();
     }
-
-    if key.just_pressed(KeyCode::Digit1) {
-        commands.ink_select_choice(0);
-    }
-    if key.just_pressed(KeyCode::Digit2) {
-        commands.ink_select_choice(1);
-    }
-    if key.just_pressed(KeyCode::Digit3) {
-        commands.ink_select_choice(2);
-    }
-    if key.just_pressed(KeyCode::Digit4) {
-        commands.ink_select_choice(3);
-    }
-    if key.just_pressed(KeyCode::Digit5) {
-        commands.ink_select_choice(4);
-    }
-    if key.just_pressed(KeyCode::Digit6) {
-        commands.ink_select_choice(5);
-    }
-    if key.just_pressed(KeyCode::Digit7) {
-        commands.ink_select_choice(6);
-    }
-    if key.just_pressed(KeyCode::Digit8) {
-        commands.ink_select_choice(7);
-    }
-    if key.just_pressed(KeyCode::Digit9) {
-        commands.ink_select_choice(8);
-    }
 }
 
-// begin dialogue sequence
 fn on_story_ready(
     _: On<StoryReady>,
     mut commands: Commands,
     mut q_text: Single<&mut Text, With<TextDisplay>>,
 ) {
-    // start is the first knot defined in The Intercept
     commands.ink_begin_sequence("start");
-    q_text.0 = "The Intercept.\n".to_string();
+    q_text.0 = "Binding demo.\n".to_string();
 }
 
-// update UI with new line of dialogue
-fn on_deliver_line(
-    line: On<DeliverLine>,
-    mut q_text: Single<&mut Text, (With<TextDisplay>, Without<InstructionsDisplay>)>,
-    mut instructions: Single<&mut Text, (With<InstructionsDisplay>, Without<TextDisplay>)>,
-) {
+fn on_deliver_line(line: On<DeliverLine>, mut q_text: Single<&mut Text, With<TextDisplay>>) {
     q_text.0 = line.text.clone();
-    instructions.0 = "Press space to continue".to_string();
-}
-
-// update UI with new choices
-fn on_deliver_choices(
-    choices: On<DeliverChoices>,
-    mut q_text: Single<&mut Text, (With<TextDisplay>, Without<InstructionsDisplay>)>,
-    mut instructions: Single<&mut Text, (With<InstructionsDisplay>, Without<TextDisplay>)>,
-) {
-    let mut text = String::new();
-    for (index, choice) in choices.choices.iter().enumerate() {
-        text.push_str(&format!("{}: {}\n", index + 1, choice.text()));
-    }
-    q_text.0 = text;
-    instructions.0 = "Press number to select choice".to_string();
 }

@@ -1,0 +1,73 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "set_text_color": [
+        {
+          "temp=": "color"
+        },
+        "ev",
+        "void",
+        "/ev",
+        "~ret",
+        null
+      ],
+      "start": [
+        "ev",
+        "str",
+        "^#FF0000",
+        "/str",
+        {
+          "x()": "set_text_color",
+          "exArgs": 1
+        },
+        "pop",
+        "/ev",
+        "\n",
+        "^the text is red!",
+        "\n",
+        "ev",
+        "str",
+        "^#00FF00",
+        "/str",
+        {
+          "x()": "set_text_color",
+          "exArgs": 1
+        },
+        "pop",
+        "/ev",
+        "\n",
+        "^now the text is green!",
+        "\n",
+        "ev",
+        "str",
+        "^#0000FF",
+        "/str",
+        {
+          "x()": "set_text_color",
+          "exArgs": 1
+        },
+        "pop",
+        "/ev",
+        "\n",
+        "^this text is blue!",
+        "\n",
+        {
+          "->": ".^"
+        },
+        null
+      ]
+    }
+  ],
+  "listDefs": {}
+}
