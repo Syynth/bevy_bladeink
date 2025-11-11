@@ -1,13 +1,14 @@
 pub use crate::{
     commands::{
         BeginSequenceCommandsExt, ContinueSequenceCommandsExt, LoadStateCommandsExt,
-        ResetStateCommandsExt, SelectChoiceCommandsExt,
+        ResetStateCommandsExt, SelectChoiceCommandsExt, SetVariableCommandsExt,
+        TrackVariableCommandsExt,
     },
     components::InkPath,
     events::*,
     ink::{AddInkBindingApp, InkBindingDefinition, InkBindingError},
     plugin::InkPlugin,
-    resources::InkStory,
+    resources::{InkStory, InkVariables},
 };
 
 #[cfg(feature = "ui")]

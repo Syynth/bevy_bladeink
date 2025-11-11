@@ -1,5 +1,5 @@
 use bevy::{color::palettes::tailwind::GRAY_400, prelude::*};
-use bevy_bladeink::prelude::*;
+use bevy_bladeink::{prelude::*, resources::InkVariables};
 use bladeink::value_type::ValueType;
 
 fn main() {
@@ -31,8 +31,8 @@ struct SetTextColor(Color);
 impl InkBindingDefinition for SetTextColor {
     type Event = SetTextColor;
 
-    fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
-        match &args[..] {
+    fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError> {
+        match args {
             [] => Err(InkBindingError::ArgumentsRequired),
             [ValueType::String(color)] => Srgba::hex(&color.string)
                 .map(|c| SetTextColor(c.into()))
@@ -111,9 +111,20 @@ fn on_story_ready(
     mut q_text: Single<&mut Text, With<TextDisplay>>,
 ) {
     commands.ink_begin_sequence("start");
+    commands.ink_track_variable("color_change_count");
     q_text.0 = "Binding demo.\n".to_string();
 }
 
-fn on_deliver_line(line: On<DeliverLine>, mut q_text: Single<&mut Text, With<TextDisplay>>) {
-    q_text.0 = line.text.clone();
+fn on_deliver_line(
+    line: On<DeliverLine>,
+    mut q_text: Single<&mut Text, With<TextDisplay>>,
+    ink_vars: Res<InkVariables>,
+) {
+    let mut next_line = line.text.clone();
+
+    if let Some(count) = ink_vars.get_int("color_change_count") {
+        next_line.push_str(&format!("\nColor changed {} times.", count));
+    }
+
+    q_text.0 = next_line;
 }

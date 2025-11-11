@@ -2,7 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_crossbeam_event::{CrossbeamEventApp, CrossbeamEventSender};
-use bladeink::{story::external_functions::ExternalFunction, value_type::ValueType};
+use bladeink::{
+    story::{external_functions::ExternalFunction, variable_observer::VariableObserver},
+    value_type::ValueType,
+};
 use thiserror::Error;
 
 /// Error type for ink bindings.
@@ -29,7 +32,12 @@ pub trait InkBindingDefinition: Clone + 'static {
     type Event: Event + Clone;
 
     /// Parses the event from the given arguments.
-    fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError>;
+    fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError>;
+
+    /// Evaluates the parsed event, and optionally returns a value to the ink runtime.
+    fn evaluate(_event: &Self::Event) -> Option<impl Into<ValueType>> {
+        Option::<ValueType>::None
+    }
 }
 
 /// Allows defining an observer/event for an ink function.
@@ -43,7 +51,7 @@ pub trait AddInkBindingApp {
         name: impl AsRef<str>,
     ) -> &mut Self
     where
-        for<'a> <<T as InkBindingDefinition>::Event as Event>::Trigger<'a>: Default;
+        for<'a> <T::Event as Event>::Trigger<'a>: Default;
 }
 
 impl AddInkBindingApp for App {
@@ -52,20 +60,20 @@ impl AddInkBindingApp for App {
         name: impl AsRef<str>,
     ) -> &mut Self
     where
-        for<'a> <<T as InkBindingDefinition>::Event as Event>::Trigger<'a>: Default,
+        for<'a> <T::Event as Event>::Trigger<'a>: Default,
     {
         let world = self.world_mut();
         if world
-            .get_resource::<CrossbeamEventSender<<T as InkBindingDefinition>::Event>>()
+            .get_resource::<CrossbeamEventSender<T::Event>>()
             .is_none()
         {
-            self.add_crossbeam_event::<<T as InkBindingDefinition>::Event>();
+            self.add_crossbeam_event::<T::Event>();
         }
 
         let world = self.world_mut();
 
         let channel = world
-            .get_resource::<CrossbeamEventSender<<T as InkBindingDefinition>::Event>>()
+            .get_resource::<CrossbeamEventSender<T::Event>>()
             .expect("CrossbeamEventSender initialized above. If you see this error, it means that the bevy_bladeink plugin was not initialized correctly.")
             .clone();
 
@@ -75,7 +83,7 @@ impl AddInkBindingApp for App {
 
         binding_map.insert(
             name.as_ref().to_string(),
-            PhantomInkBinding::<T>::boxed(channel.clone()),
+            InkBindingFn::<T>::to_binding(channel.clone()),
         );
 
         self
@@ -87,30 +95,53 @@ pub(crate) type InkBindingMap = HashMap<String, Rc<RefCell<dyn ExternalFunction>
 
 /// Phantom ink binding that does nothing.
 #[derive(Clone)]
-struct PhantomInkBinding<B: InkBindingDefinition> {
-    sender: CrossbeamEventSender<<B as InkBindingDefinition>::Event>,
+pub(crate) struct InkBindingFn<B: InkBindingDefinition> {
+    sender: CrossbeamEventSender<B::Event>,
 }
 
-impl<B: InkBindingDefinition> PhantomInkBinding<B> {
+impl<B: InkBindingDefinition> InkBindingFn<B> {
     /// Create a new phantom ink binding.
-    fn boxed(
-        sender: CrossbeamEventSender<<B as InkBindingDefinition>::Event>,
+    pub(crate) fn to_binding(
+        sender: CrossbeamEventSender<B::Event>,
     ) -> Rc<RefCell<dyn ExternalFunction>> {
         Rc::new(RefCell::new(Self { sender }))
     }
 }
 
-impl<B: InkBindingDefinition> ExternalFunction for PhantomInkBinding<B> {
+impl<B: InkBindingDefinition> InkBindingFn<B> {
+    /// Create a new phantom ink binding.
+    pub(crate) fn to_observer(
+        sender: CrossbeamEventSender<B::Event>,
+    ) -> Rc<RefCell<dyn VariableObserver>> {
+        Rc::new(RefCell::new(Self { sender }))
+    }
+}
+
+impl<B: InkBindingDefinition> ExternalFunction for InkBindingFn<B> {
     fn call(&mut self, name: &str, args: Vec<ValueType>) -> Option<ValueType> {
-        let event = match B::try_parse_event(args) {
+        let event = match B::try_parse_event(&args[..]) {
             Ok(event) => event,
             Err(err) => {
                 error!("Failed to invoke ink binding '{name}': {err:?}");
                 return None;
             }
         };
+        let retval: Option<ValueType> = B::evaluate(&event).map(Into::into);
         self.sender.send(event);
-        None
+        retval
+    }
+}
+
+impl<B: InkBindingDefinition> VariableObserver for InkBindingFn<B> {
+    fn changed(&mut self, name: &str, value: &ValueType) {
+        let event = match B::try_parse_event(&vec![ValueType::from(name), value.clone()]) {
+            Ok(event) => event,
+            Err(err) => {
+                error!("Failed to invoke ink binding '{name}': {err:?}");
+                return;
+            }
+        };
+        self.sender.send(event);
     }
 }
 
@@ -128,8 +159,8 @@ mod tests {
     impl InkBindingDefinition for NoArgsEvent {
         type Event = Self;
 
-        fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
-            match &args[..] {
+        fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError> {
+            match args {
                 [] => Ok(NoArgsEvent),
                 _ => Err(InkBindingError::TooManyArguments),
             }
@@ -143,8 +174,8 @@ mod tests {
     impl InkBindingDefinition for SingleStringEvent {
         type Event = Self;
 
-        fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
-            match &args[..] {
+        fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError> {
+            match args {
                 [] => Err(InkBindingError::ArgumentsRequired),
                 [ValueType::String(s)] => Ok(SingleStringEvent(s.string.clone())),
                 [_] => Err(InkBindingError::InvalidArguments),
@@ -160,8 +191,8 @@ mod tests {
     impl InkBindingDefinition for SingleIntEvent {
         type Event = Self;
 
-        fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
-            match &args[..] {
+        fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError> {
+            match args {
                 [] => Err(InkBindingError::ArgumentsRequired),
                 [ValueType::Int(i)] => Ok(SingleIntEvent(*i)),
                 [_] => Err(InkBindingError::InvalidArguments),
@@ -177,8 +208,8 @@ mod tests {
     impl InkBindingDefinition for SingleFloatEvent {
         type Event = Self;
 
-        fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
-            match &args[..] {
+        fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError> {
+            match args {
                 [] => Err(InkBindingError::ArgumentsRequired),
                 [ValueType::Float(f)] => Ok(SingleFloatEvent(*f)),
                 [_] => Err(InkBindingError::InvalidArguments),
@@ -194,8 +225,8 @@ mod tests {
     impl InkBindingDefinition for SingleBoolEvent {
         type Event = Self;
 
-        fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
-            match &args[..] {
+        fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError> {
+            match args {
                 [] => Err(InkBindingError::ArgumentsRequired),
                 [ValueType::Bool(b)] => Ok(SingleBoolEvent(*b)),
                 [_] => Err(InkBindingError::InvalidArguments),
@@ -215,8 +246,8 @@ mod tests {
     impl InkBindingDefinition for MultiArgEvent {
         type Event = Self;
 
-        fn try_parse_event(args: Vec<ValueType>) -> Result<Self::Event, InkBindingError> {
-            match &args[..] {
+        fn try_parse_event(args: &[ValueType]) -> Result<Self::Event, InkBindingError> {
+            match args {
                 [
                     ValueType::String(name),
                     ValueType::Int(value),
@@ -235,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_no_args_event_parsing() {
-        let result = NoArgsEvent::try_parse_event(vec![]);
+        let result = NoArgsEvent::try_parse_event(&[]);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), NoArgsEvent);
     }
@@ -243,7 +274,7 @@ mod tests {
     #[test]
     fn test_no_args_event_rejects_arguments() {
         let args = vec![ValueType::from(42)];
-        let result = NoArgsEvent::try_parse_event(args);
+        let result = NoArgsEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -254,14 +285,14 @@ mod tests {
     #[test]
     fn test_single_string_event_parsing() {
         let args = vec![ValueType::from("test")];
-        let result = SingleStringEvent::try_parse_event(args);
+        let result = SingleStringEvent::try_parse_event(&args);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), SingleStringEvent("test".to_string()));
     }
 
     #[test]
     fn test_single_string_event_requires_arguments() {
-        let result = SingleStringEvent::try_parse_event(vec![]);
+        let result = SingleStringEvent::try_parse_event(&[]);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -272,7 +303,7 @@ mod tests {
     #[test]
     fn test_single_string_event_rejects_wrong_type() {
         let args = vec![ValueType::from(42)];
-        let result = SingleStringEvent::try_parse_event(args);
+        let result = SingleStringEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -283,7 +314,7 @@ mod tests {
     #[test]
     fn test_single_string_event_rejects_too_many_args() {
         let args = vec![ValueType::from("test"), ValueType::from("extra")];
-        let result = SingleStringEvent::try_parse_event(args);
+        let result = SingleStringEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -294,7 +325,7 @@ mod tests {
     #[test]
     fn test_single_int_event_parsing() {
         let args = vec![ValueType::from(42)];
-        let result = SingleIntEvent::try_parse_event(args);
+        let result = SingleIntEvent::try_parse_event(&args);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), SingleIntEvent(42));
     }
@@ -302,7 +333,7 @@ mod tests {
     #[test]
     fn test_single_int_event_rejects_wrong_type() {
         let args = vec![ValueType::from("42")];
-        let result = SingleIntEvent::try_parse_event(args);
+        let result = SingleIntEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -313,7 +344,7 @@ mod tests {
     #[test]
     fn test_single_float_event_parsing() {
         let args = vec![ValueType::from(f32::consts::PI)];
-        let result = SingleFloatEvent::try_parse_event(args);
+        let result = SingleFloatEvent::try_parse_event(&args);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), SingleFloatEvent(f32::consts::PI));
     }
@@ -321,7 +352,7 @@ mod tests {
     #[test]
     fn test_single_float_event_rejects_wrong_type() {
         let args = vec![ValueType::Int(3)];
-        let result = SingleFloatEvent::try_parse_event(args);
+        let result = SingleFloatEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -332,12 +363,12 @@ mod tests {
     #[test]
     fn test_single_bool_event_parsing() {
         let args = vec![ValueType::from(true)];
-        let result = SingleBoolEvent::try_parse_event(args);
+        let result = SingleBoolEvent::try_parse_event(&args);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), SingleBoolEvent(true));
 
         let args = vec![ValueType::from(false)];
-        let result = SingleBoolEvent::try_parse_event(args);
+        let result = SingleBoolEvent::try_parse_event(&args);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), SingleBoolEvent(false));
     }
@@ -345,7 +376,7 @@ mod tests {
     #[test]
     fn test_single_bool_event_rejects_wrong_type() {
         let args = vec![ValueType::from(1)];
-        let result = SingleBoolEvent::try_parse_event(args);
+        let result = SingleBoolEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -360,7 +391,7 @@ mod tests {
             ValueType::from(100),
             ValueType::from(true),
         ];
-        let result = MultiArgEvent::try_parse_event(args);
+        let result = MultiArgEvent::try_parse_event(&args);
         assert!(result.is_ok());
         let event = result.unwrap();
         assert_eq!(event.name, "player");
@@ -371,7 +402,7 @@ mod tests {
     #[test]
     fn test_multi_arg_event_requires_all_arguments() {
         // No arguments
-        let result = MultiArgEvent::try_parse_event(vec![]);
+        let result = MultiArgEvent::try_parse_event(&[]);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -379,7 +410,7 @@ mod tests {
         ));
 
         // Only one argument
-        let result = MultiArgEvent::try_parse_event(vec![ValueType::from("player")]);
+        let result = MultiArgEvent::try_parse_event(&[ValueType::from("player")]);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -388,7 +419,7 @@ mod tests {
 
         // Only two arguments
         let result =
-            MultiArgEvent::try_parse_event(vec![ValueType::from("player"), ValueType::from(100)]);
+            MultiArgEvent::try_parse_event(&vec![ValueType::from("player"), ValueType::from(100)]);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -403,7 +434,7 @@ mod tests {
             ValueType::from(100),
             ValueType::from(true),
         ];
-        let result = MultiArgEvent::try_parse_event(args);
+        let result = MultiArgEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -419,7 +450,7 @@ mod tests {
             ValueType::from(true),
             ValueType::from(999), // Extra argument
         ];
-        let result = MultiArgEvent::try_parse_event(args);
+        let result = MultiArgEvent::try_parse_event(&args);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),

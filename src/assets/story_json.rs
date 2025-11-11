@@ -44,6 +44,12 @@ impl AssetLoader for InkStoryJsonLoader {
     ) -> Result<Self::Asset, Self::Error> {
         let mut text = String::new();
         reader.read_to_string(&mut text).await?;
+        // not sure why, but the npx inkjs CLI sometimes inserts a single NBSP
+        // byte at the beginning of the file. i could investigate, but this is
+        // an easy workaround for now.
+        if !text.starts_with("{") {
+            text.remove(0);
+        }
         Ok(StoryJson::new(text))
     }
 

@@ -52,16 +52,60 @@ impl InkValue {
     }
 }
 
+impl From<bool> for InkValue {
+    fn from(b: bool) -> Self {
+        InkValue::Bool(b)
+    }
+}
+
+impl From<f32> for InkValue {
+    fn from(f: f32) -> Self {
+        InkValue::Float(f)
+    }
+}
+
+impl From<String> for InkValue {
+    fn from(s: String) -> Self {
+        InkValue::String(s)
+    }
+}
+
+impl From<&str> for InkValue {
+    fn from(s: &str) -> Self {
+        InkValue::String(s.to_string())
+    }
+}
+
+impl From<i32> for InkValue {
+    fn from(i: i32) -> Self {
+        InkValue::Int(i)
+    }
+}
+
 impl From<ValueType> for InkValue {
     fn from(value_type: ValueType) -> Self {
         match value_type {
             ValueType::Bool(b) => InkValue::Bool(b),
             ValueType::Int(i) => InkValue::Int(i),
             ValueType::Float(f) => InkValue::Float(f),
-            ValueType::String(s) => InkValue::String(s.string.clone()),
+            ValueType::String(s) => InkValue::String(s.string),
             ValueType::List(_) => InkValue::List,
             ValueType::DivertTarget(_) => InkValue::DivertTarget,
             ValueType::VariablePointer(_) => InkValue::VariablePointer,
+        }
+    }
+}
+
+impl From<&InkValue> for ValueType {
+    fn from(ink_value: &InkValue) -> Self {
+        match ink_value {
+            InkValue::Bool(b) => ValueType::Bool(*b),
+            InkValue::Int(i) => ValueType::Int(*i),
+            InkValue::Float(f) => ValueType::Float(*f),
+            InkValue::String(s) => ValueType::from(s.as_str()),
+            InkValue::List => todo!(),
+            InkValue::DivertTarget => todo!(),
+            InkValue::VariablePointer => todo!(),
         }
     }
 }
