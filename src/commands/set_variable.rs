@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bladeink::story::Story;
 
-use crate::ink::InkValue;
+use crate::{events::InkStateChanged, ink::InkValue};
 
 #[derive(Debug, Clone)]
 pub(crate) struct SetVariableCommand {
@@ -27,7 +27,9 @@ impl Command for SetVariableCommand {
             return;
         };
         match story.set_variable(&self.name, &(&self.value).into()) {
-            Ok(_) => (),
+            Ok(_) => {
+                world.trigger(InkStateChanged);
+            }
             Err(err) => error!(
                 "Failed to set variable '{}' to value '{:?}': {}",
                 self.name, &self.value, err

@@ -2,7 +2,7 @@ use bevy::{platform::collections::HashMap, prelude::*};
 
 use crate::ink::InkValue;
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Clone)]
 pub struct InkVariables {
     pub(crate) tracked_variables: HashMap<String, InkValue>,
 }

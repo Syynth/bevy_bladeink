@@ -86,7 +86,7 @@ fn on_deliver_choices(choices: On<DeliverChoices>, mut commands: Commands) {
 This crate is still a work in progress. I'm focused on the use-cases that are blocking my usage in my own game, but suggestions, feature ideas, and pull requests are welcome :)
 
 #### Coming Soon:
-- [ ] Observing variables
+- [x] Observing variables
 - [ ] Proper load/save/restore functionality
 - [ ] Full support for hot-reloading (current implementation untested, should sort of work)
 - [ ] An unstyled, pre-built dialogue UI that does most of the heavy lifting for you.

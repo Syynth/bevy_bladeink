@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bladeink::story::Story;
 
+use crate::events::SequenceBegin;
+
 /// Represents a command to start an ink sequence.
 pub(crate) struct BeginSequenceCommand {
     sequence: String,
@@ -18,7 +20,7 @@ impl BeginSequenceCommand {
 impl Command for BeginSequenceCommand {
     fn apply(self, world: &mut World) {
         #[cfg(feature = "debug_log")]
-        trace!("Starting ink sequence '{}'", self.sequence);
+        info!("Starting ink sequence '{}'", self.sequence);
         let Some(mut story) = world.get_non_send_resource_mut::<Story>() else {
             error!(
                 "Failed to start ink sequence '{}': Story resource not found. Did you forget to insert the InkProject resource?",
@@ -27,7 +29,9 @@ impl Command for BeginSequenceCommand {
             return;
         };
         match story.choose_path_string(&self.sequence, true, None) {
-            Ok(_) => (),
+            Ok(_) => {
+                world.trigger(SequenceBegin(self.sequence));
+            }
             Err(err) => {
                 warn!("Failed to start ink sequence '{}': {}", self.sequence, err);
             }

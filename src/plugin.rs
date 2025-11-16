@@ -18,6 +18,7 @@ impl Plugin for InkPlugin {
         app.add_crossbeam_event::<VariableUpdated>()
             .init_resource::<InkVariables>()
             .add_observer(on_variable_updated)
+            .add_observer(on_state_changed)
             .world_mut()
             .insert_non_send_resource(InkBindingMap::default());
 

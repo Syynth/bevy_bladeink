@@ -1,9 +1,17 @@
 use bevy::prelude::*;
 
-use crate::ink::ChoiceItem;
+use crate::ink::{ChoiceItem, InkState};
 
 #[derive(Event, Clone, Debug)]
 pub struct StoryReady;
+
+#[derive(Event, Debug)]
+pub(crate) struct InkStateChanged;
+
+/// Published when the state of the ink story changes. This is a bit of a hack
+/// for now, better options for persistence will be implemented in the future.
+#[derive(Event, Clone, Debug)]
+pub struct InkStateUpdate(pub InkState);
 
 /// After a successful `BeginSequence` command is sent, this event is emitted.
 #[derive(Event, Clone, Debug)]
