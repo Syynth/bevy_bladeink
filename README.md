@@ -87,10 +87,11 @@ This crate is still a work in progress. I'm focused on the use-cases that are bl
 
 #### Coming Soon:
 - [x] Observing variables
-- [ ] Proper load/save/restore functionality
+- [x] Proper load/save/restore functionality
 - [ ] Full support for hot-reloading (current implementation untested, should sort of work)
 - [ ] An unstyled, pre-built dialogue UI that does most of the heavy lifting for you.
 - [ ] A selection of pre-built external function bindings that are useful for common tasks.
+- [ ] Derive macro for events to derive InkBindingDefinition
 - [ ] More examples and documentation
 
 #### Support TBD:

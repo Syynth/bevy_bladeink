@@ -513,12 +513,22 @@ dependencies = [
 
 [[package]]
 name = "bevy_bladeink"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bevy",
+ "bevy_bladeink_derive",
  "bevy_crossbeam_event",
  "bladeink",
  "thiserror 2.0.17",
+]
+
+[[package]]
+name = "bevy_bladeink_derive"
+version = "0.1.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -134,7 +134,7 @@ impl<B: InkBindingDefinition> ExternalFunction for InkBindingFn<B> {
 
 impl<B: InkBindingDefinition> VariableObserver for InkBindingFn<B> {
     fn changed(&mut self, name: &str, value: &ValueType) {
-        let event = match B::try_parse_event(&vec![ValueType::from(name), value.clone()]) {
+        let event = match B::try_parse_event(&[ValueType::from(name), value.clone()]) {
             Ok(event) => event,
             Err(err) => {
                 error!("Failed to invoke ink binding '{name}': {err:?}");
@@ -419,7 +419,7 @@ mod tests {
 
         // Only two arguments
         let result =
-            MultiArgEvent::try_parse_event(&vec![ValueType::from("player"), ValueType::from(100)]);
+            MultiArgEvent::try_parse_event(&[ValueType::from("player"), ValueType::from(100)]);
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),

@@ -11,5 +11,8 @@ pub use crate::{
     resources::{InkStory, InkVariables},
 };
 
+// Re-export the derive macro
+pub use bevy_bladeink_derive::InkBinding;
+
 #[cfg(feature = "ui")]
 pub use crate::ui::prelude::*;

@@ -1,5 +1,5 @@
 use bevy::{color::palettes::tailwind::GRAY_400, prelude::*};
-use bevy_bladeink::{prelude::*, resources::InkVariables};
+use bevy_bladeink::prelude::*;
 use bladeink::value_type::ValueType;
 
 fn main() {
@@ -28,6 +28,9 @@ struct CounterDisplay;
 #[derive(Component)]
 struct InstructionsDisplay;
 
+// Example of MANUAL implementation for custom parsing logic.
+// This is used when you need to do complex parsing (like hex color parsing).
+// For simple types, use the derive macro instead (see examples below).
 #[derive(Event, Clone)]
 struct SetTextColor(Color);
 
@@ -45,6 +48,25 @@ impl InkBindingDefinition for SetTextColor {
         }
     }
 }
+
+// Examples of DERIVED implementations for basic types.
+// The derive macro automatically generates the try_parse_event implementation
+// for structs with basic field types (String, i32, f32, bool).
+
+// Example 1: Simple event with basic types
+#[derive(Event, Clone, InkBinding)]
+struct SimpleEvent {
+    message: String,
+    count: i32,
+}
+
+// Example 2: Tuple struct
+#[derive(Event, Clone, InkBinding)]
+struct TupleEvent(String);
+
+// Example 3: Unit struct (no arguments)
+#[derive(Event, Clone, InkBinding)]
+struct NoArgsEvent;
 
 fn on_set_text_color(
     text_color: On<SetTextColor>,
