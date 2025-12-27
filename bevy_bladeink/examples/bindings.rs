@@ -8,6 +8,9 @@ fn main() {
         .add_plugins(InkPlugin)
         .insert_resource(InkStory::new("ink/bindings.ink.json"))
         .bind_ink_function::<SetTextColor>("set_text_color")
+        .bind_ink_function::<NoArgsEvent>("no_args_event")
+        .bind_ink_function::<SimpleEvent>("simple_event")
+        .bind_ink_function::<TupleEvent>("tuple_event")
         .add_systems(Startup, setup)
         .add_systems(Update, update)
         .add_observer(on_set_text_color)
@@ -55,18 +58,18 @@ impl InkBindingDefinition for SetTextColor {
 
 // Example 1: Simple event with basic types
 #[derive(Event, Clone, InkBinding)]
-struct SimpleEvent {
-    message: String,
-    count: i32,
+pub struct SimpleEvent {
+    pub message: String,
+    pub count: i32,
 }
 
 // Example 2: Tuple struct
 #[derive(Event, Clone, InkBinding)]
-struct TupleEvent(String);
+pub struct TupleEvent(pub String);
 
 // Example 3: Unit struct (no arguments)
 #[derive(Event, Clone, InkBinding)]
-struct NoArgsEvent;
+pub struct NoArgsEvent;
 
 fn on_set_text_color(
     text_color: On<SetTextColor>,

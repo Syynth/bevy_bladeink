@@ -1,7 +1,9 @@
-//! Integration tests for the InkBinding derive macro.
+//! Integration tests for the `InkBinding` derive macro.
 //!
 //! These tests verify that derived implementations match the expected behavior
 //! of manual implementations.
+
+use core::f32;
 
 use bevy::prelude::*;
 use bevy_bladeink::prelude::*;
@@ -93,10 +95,10 @@ struct DerivedSingleFloat(f32);
 
 #[test]
 fn test_derived_single_float_parsing() {
-    let args = vec![ValueType::from(3.14f32)];
+    let args = vec![ValueType::from(f32::consts::PI)];
     let result = DerivedSingleFloat::try_parse_event(&args);
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), DerivedSingleFloat(3.14));
+    assert_eq!(result.unwrap(), DerivedSingleFloat(f32::consts::PI));
 }
 
 #[test]
@@ -170,10 +172,8 @@ fn test_derived_multi_field_requires_all_args() {
     assert!(matches!(result, Err(InkBindingError::ArgumentsRequired)));
 
     // Only two arguments
-    let result = DerivedMultiField::try_parse_event(&[
-        ValueType::from("player"),
-        ValueType::from(100),
-    ]);
+    let result =
+        DerivedMultiField::try_parse_event(&[ValueType::from("player"), ValueType::from(100)]);
     assert!(matches!(result, Err(InkBindingError::ArgumentsRequired)));
 }
 
