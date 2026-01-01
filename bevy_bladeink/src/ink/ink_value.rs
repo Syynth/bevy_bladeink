@@ -4,10 +4,11 @@
 
 use bevy::prelude::*;
 use bladeink::value_type::ValueType;
+use serde::{Deserialize, Serialize};
 
 /// An Ink value, tagged with its type.
 #[repr(u8)]
-#[derive(Clone, Debug, Reflect)]
+#[derive(Clone, Debug, Reflect, Serialize, Deserialize)]
 pub enum InkValue {
     Bool(bool),
     Int(i32),

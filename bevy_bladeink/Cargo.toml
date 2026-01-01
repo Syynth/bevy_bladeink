@@ -13,6 +13,7 @@ bevy_bladeink_derive = { path = "../bevy_bladeink_derive", version = "0.1.0" }
 
 thiserror = "2"
 bladeink = "1"
+serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 bevy = { version = "0.17", default-features = true }

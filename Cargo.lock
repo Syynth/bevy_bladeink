@@ -519,6 +519,7 @@ dependencies = [
  "bevy_bladeink_derive",
  "bevy_crossbeam_event",
  "bladeink",
+ "serde",
  "thiserror 2.0.17",
 ]
 
